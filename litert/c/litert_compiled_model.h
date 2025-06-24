@@ -150,11 +150,6 @@ LiteRtStatus LiteRtCompiledModelStopMetricsCollection(
 LiteRtStatus LiteRtCompiledModelIsFullyAccelerated(
     LiteRtCompiledModel compiled_model, bool* fully_accelerated);
 
-// Sets the profiler for the model. Caller owns the profiler and is responsible
-// for calling LiteRtDestroyProfiler() to release the profiler. Profiler is
-// needed on during the model execution, can be disposed after execution.
-LiteRtStatus LiteRtCompiledModelSetProfiler(LiteRtCompiledModel compiled_model,
-                                            LiteRtProfiler profiler);
 #ifdef __cplusplus
 }
 #endif  // __cplusplus
