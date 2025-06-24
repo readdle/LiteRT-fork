@@ -72,7 +72,6 @@
 #include "tflite/core/interpreter_builder.h"
 #include "tflite/delegates/utils/simple_opaque_delegate.h"
 #include "tflite/interpreter.h"
-#include "tflite/interpreter_options.h"
 #include "tflite/kernels/register.h"
 #include "tflite/model_builder.h"
 
@@ -99,32 +98,7 @@ Expected<void> LiteRtCompiledModelT::InitializeRuntime(
     }
   }
 
-  tflite::InterpreterOptions interpreter_options;
-  interpreter_options.SetUseSignatureTensorNames(true);
-  int num_threads = 1;
-  if (jit_compilation_options) {
-    litert::Options cc_options(jit_compilation_options, litert::OwnHandle::kNo);
-    LITERT_ASSIGN_OR_RETURN(litert::OpaqueOptions opaque_options,
-                            cc_options.GetOpaqueOptions());
-
-    if (auto runtime_options = litert::FindOpaqueData<LiteRtRuntimeOptionsT>(
-            opaque_options, LiteRtRuntimeOptionsT::Identifier());
-        runtime_options) {
-      interpreter_options.SetShloCompositeInlining(
-          (*runtime_options)->shlo_composite_inlining);
-    }
-
-    if (auto cpu_options = litert::FindOpaqueData<LiteRtCpuOptionsT>(
-            opaque_options, LiteRtCpuOptionsT::Identifier());
-        cpu_options) {
-      num_threads = (*cpu_options)->xnn.num_threads;
-    }
-  }
-
-  tflite::InterpreterBuilder builder(*fb_model_, resolver,
-                                     &interpreter_options);
-  builder(&interp_);
-  interp_->SetNumThreads(num_threads);
+  tflite::InterpreterBuilder(*fb_model_, resolver)(&interp_);
   if (interp_ == nullptr) {
     return Unexpected(kLiteRtStatusErrorRuntimeFailure,
                       "Failed to build TFL interpreter");
