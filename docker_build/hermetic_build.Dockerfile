@@ -39,7 +39,6 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# [CRITICAL] Create Symlinks for NDK r25 Compatibility
 # We assume x86_64 because we will force it in the build script.
 RUN ln -s /usr/lib/x86_64-linux-gnu/libncurses.so.6 /usr/lib/x86_64-linux-gnu/libncurses.so.5 && \
     ln -s /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
@@ -128,6 +127,11 @@ set -euo pipefail\n\
 ./docker_build/verify_android_env.sh\n\
 mkdir -p /tmp/bazel_cache\n\
 bazel --output_user_root=/tmp/bazel_cache build -c opt //litert/samples/model-api:litert_emb_model_so --config=android_arm64\n\
+\n\
+echo "Copying artifacts to host..."\n\
+# Bazel usually places output in bazel-bin/<package_path>\n\
+cp -f bazel-bin/litert/samples/model-api/libLitertEmbModel.so /litert_build/\n\
+echo "Artifacts available in the project root."\n\
 ' > /run_build.sh && chmod +x /run_build.sh
 
 CMD ["/run_build.sh"]
