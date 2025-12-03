@@ -45,15 +45,16 @@ for arg in "$@"; do
 done
 
 if [ "$SKIP_BUILD" -eq 0 ]; then
-  echo "Building Docker image..."
-  docker build -t litert_build_env -f ./hermetic_build.Dockerfile .
+  echo "Building Docker image (forcing x86_64 architecture)..."
+  # [FIX] Added --platform linux/amd64 here to ensure the image is built for Intel 
+  # and registered correctly in the local daemon.
+  docker build --platform linux/amd64 -t litert_build_env -f ./hermetic_build.Dockerfile .
   if [ $? -ne 0 ]; then
     echo "Error: Docker build failed."
     exit 1
   fi
 else
   echo "Using existing Docker image 'litert_build_env' (skipping build)"
-
 fi
 
 CONTAINER_NAME="litert_build_container"
@@ -65,21 +66,15 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
   docker start -ai ${CONTAINER_NAME}
 else
   echo "Running build in new Docker container..."
-  # If host is macOS on Apple Silicon, disable SVE for Bazel JVM inside container
-  HOST_OS=$(uname -s || echo unknown)
-  HOST_ARCH=$(uname -m || echo unknown)
-  DISABLE_SVE_ARG=()
-  if [ "$HOST_OS" = "Darwin" ] && { [ "$HOST_ARCH" = "arm64" ] || [ "$HOST_ARCH" = "aarch64" ]; }; then
-    DISABLE_SVE_ARG=(-e DISABLE_SVE_FOR_BAZEL=1)
-  fi
-
+  
   # Relax seccomp to allow JVM feature probes and other syscalls in container
+  # [FIX] Ensure --platform linux/amd64 is passed to run as well
   docker run --name ${CONTAINER_NAME} \
+    --platform linux/amd64 \
     --security-opt seccomp=unconfined \
     --user $(id -u):$(id -g) \
     -e HOME=/litert_build \
     -e USER=$(id -un) \
-    "${DISABLE_SVE_ARG[@]}" \
     -v $(pwd)/..:/litert_build \
     litert_build_env
 fi
@@ -93,6 +88,6 @@ echo "Build completed successfully!"
 echo ""
 echo "Container '${CONTAINER_NAME}' is preserved with all build outputs."
 echo "You can:"
-echo "  - Copy files out: docker cp ${CONTAINER_NAME}:/litert_build/bazel-bin/<path> ."
-echo "  - Or directly access the artifact from bazel-bin/ (or bazel-out)."
-echo "  - Remove container: docker rm -f ${CONTAINER_NAME}"
+echo "  - Copy files out: docker cp ${CONTAINER_NAME}:/tmp/bazel_cache/<path> ."
+echo "  - Search for output binary: docker exec litert_build_container find /tmp/bazel_cache -name 'libLitertEmbModel.so'"
+echo "  - Remove container: docker rm -f ${CONTAINER_NAME} && docker rmi litert_build_env"
