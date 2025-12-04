@@ -84,10 +84,15 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+echo "========================================================"
 echo "Build completed successfully!"
-echo ""
+echo "Artifacts are located in:"
+echo "  $(pwd)/../build-output/android_arm64/"
+echo "  $(pwd)/../build-output/android_x86_64/"
+echo "========================================================"
+
 echo "Container '${CONTAINER_NAME}' is preserved with all build outputs."
 echo "You can:"
 echo "  - Copy files out: docker cp ${CONTAINER_NAME}:/tmp/bazel_cache/<path> ."
 echo "  - Search for output binary: docker exec litert_build_container find /tmp/bazel_cache -name 'libLitertEmbModel.so'"
-echo "  - Remove container: docker rm -f ${CONTAINER_NAME} && docker rmi litert_build_env"
+echo "  - Remove container: docker rm -f litert_build_container && docker rmi litert_build_env"

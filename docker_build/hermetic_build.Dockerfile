@@ -124,16 +124,28 @@ ENTRYPOINT ["/entrypoint.sh"]
 # Build Wrapper
 RUN echo '#!/bin/bash\n\
 set -euo pipefail\n\
+\n\
 ./docker_build/verify_android_env.sh\n\
 mkdir -p /tmp/bazel_cache\n\
-bazel --output_user_root=/tmp/bazel_cache build -c opt //litert/samples/model-api:litert_emb_model_so --config=android_arm64\n\
 \n\
-echo "Copying artifacts to host..."\n\
-# Bazel usually places output in bazel-bin/<package_path>\n\
-cp -f bazel-bin/litert/samples/model-api/libLitertEmbModel.so /litert_build/\n\
-echo "Artifacts available in the project root."\n\
+# Define Output Directory\n\
+OUTPUT_DIR="/litert_build/build-output"\n\
+mkdir -p "$OUTPUT_DIR/android_arm64"\n\
+mkdir -p "$OUTPUT_DIR/android_x86_64"\n\
+\n\
+# --- Build Android ARM64 ---\n\
+echo "Building for Android ARM64..."\n\
+bazel --output_user_root=/tmp/bazel_cache build -c opt //litert/samples/model-api:litert_emb_model_so --config=android_arm64\n\
+cp -f bazel-bin/litert/samples/model-api/libLitertEmbModel.so "$OUTPUT_DIR/android_arm64/"\n\
+echo "ARM64 build successful."\n\
+\n\
+# --- Build Android x86_64 ---\n\
+echo "Building for Android x86_64..."\n\
+bazel --output_user_root=/tmp/bazel_cache build -c opt //litert/samples/model-api:litert_emb_model_so --config=android_x86_64\n\
+cp -f bazel-bin/litert/samples/model-api/libLitertEmbModel.so "$OUTPUT_DIR/android_x86_64/"\n\
+echo "x86_64 build successful."\n\
+\n\
+echo "All Artifacts copied to $OUTPUT_DIR"\n\
 ' > /run_build.sh && chmod +x /run_build.sh
 
 CMD ["/run_build.sh"]
-#bazel --output_user_root=/tmp/bazel_cache build -c opt //litert/samples/model-api:litert_emb_model_so --config=android_arm64\n\
-#bazel --output_user_root=/tmp/bazel_cache build -c opt //litert/samples/semantic_similarity:semantic_similarity --config=android_arm64\n\
